@@ -12,6 +12,8 @@
 #              simple Python bot that scours the TrustRadius page for
 #              all new reviews and then creates detailed reports directly 
 #              from the information gathered in those reports.
+
+# import required dependencies
 from bs4 import BeautifulSoup
 import requests
 
@@ -31,6 +33,9 @@ links = []
 # Append all the URLs to the list we created
 for link in query:
     links.append('https://www.trustradius.com' + link.get('href'))
+
+print "%d links found.\n" % len(links)
+
 
 # Function for returning review sections from review page
 # return (dictionary): a key-value list of the headings and review text
@@ -62,11 +67,20 @@ def findMaterials(link):
         sectionText.append(find.contents[0].contents[0].contents[1].contents[3].contents[1].contents[0].contents[0].contents[0].text)
         sectionText.append(find.contents[0].contents[0].contents[1].contents[4].contents[1].contents[0].contents[0].contents[0].text)
         sectionText.append(find.contents[0].contents[0].contents[1].contents[5].contents[1].contents[0].contents[0].contents[0].text)
+
     # Return a dictionary object of headings and text
     return(dict(zip(sectionHeading, sectionText)))
 
-dictionary = findMaterials(links[0])
 
-for x, y in dictionary.items():
-    print(x,y)
+# DEBUGGING CODE FOR DEVELOPMENT
+
+dict1 = findMaterials(links[0])
+dict2 = findMaterials(links[1])
+dict3 = findMaterials(links[2])
+dict4 = findMaterials(links[3])
+dict5 = findMaterials(links[4])
+dict6 = findMaterials(links[5])
+
+for x, y in dict5.items():
+    print(x, y)
 
