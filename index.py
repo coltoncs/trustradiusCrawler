@@ -16,6 +16,7 @@
 # import required dependencies
 from bs4 import BeautifulSoup
 import requests
+import docx
 
 # Open up TrustRadius page for Sitefinity
 url = "https://www.trustradius.com/products/progress-sitefinity/reviews"
@@ -34,7 +35,17 @@ links = []
 for link in query:
     links.append('https://www.trustradius.com' + link.get('href'))
 
+# Print number of reviews to command line
 print "%d links found.\n" % len(links)
+
+# Create custom data structure Review to hold user reviews
+class Review:
+    def __init__(self, name, position, company, rating, goodies):
+        self.name = name
+        self.position = position
+        self.company = company
+        self.rating = rating
+        self.goodies = goodies
 
 
 # Function for returning review sections from review page
@@ -43,44 +54,78 @@ print "%d links found.\n" % len(links)
 def findMaterials(link):
     # Parse the given link into some Beautiful Soup
     req = requests.get(link).text
-    review = BeautifulSoup(req, 'html.parser')
+    reviews = BeautifulSoup(req, 'html.parser')
 
     # Set up list string variables.
+    reviewAuthor = []
+    reviewPosition = []
+    reviewCompany = []
+    reviewRating = []
     sectionHeading = []
     sectionText = []
 
+    # Find the authors name (if there is one)
+    for review in reviews.find_all('span', {'itemprop': 'author'}):
+        reviewAuthor.append(review.contents[0].text)
+    
+    # Find the author's position and company (if applicable)
+    for review in reviews.find_all('span', {'class': 'user-info'}):
+        reviewPosition.append(review.contents[0].text)
+        reviewCompany.append(review.contents[1].text)
+
+    # Find what the user rated Sitefinity
+    reviewRating = reviews.find_all('span', class_='number')[0].text
+
     # Perform find.contents[] for all of the headings and text
     # and append them to our functions variables
-    for find in review.find_all('div', {'class': 'description'}):
+    for review in reviews.find_all('div', {'class': 'description'}):
         # Recieve review section headings
-        sectionHeading.append(find.contents[0].contents[0].contents[1].contents[0].contents[0].contents[0].contents[0].contents[0].text)
-        sectionHeading.append(find.contents[0].contents[0].contents[1].contents[1].contents[0].contents[0].contents[0].contents[0].text)
-        sectionHeading.append(find.contents[0].contents[0].contents[1].contents[2].contents[0].contents[0].contents[0].contents[0].text)
-        sectionHeading.append(find.contents[0].contents[0].contents[1].contents[3].contents[0].contents[0].contents[0].contents[0].text)        
-        sectionHeading.append(find.contents[0].contents[0].contents[1].contents[4].contents[0].contents[0].contents[0].contents[0].text)
-        sectionHeading.append(find.contents[0].contents[0].contents[1].contents[5].contents[0].contents[0].contents[0].contents[0].text)
+        sectionHeading.append(review.contents[0].contents[0].contents[1].contents[0].contents[0].contents[0].contents[0].contents[0].text)
+        sectionHeading.append(review.contents[0].contents[0].contents[1].contents[1].contents[0].contents[0].contents[0].contents[0].text)
+        sectionHeading.append(review.contents[0].contents[0].contents[1].contents[2].contents[0].contents[0].contents[0].contents[0].text)
+        sectionHeading.append(review.contents[0].contents[0].contents[1].contents[3].contents[0].contents[0].contents[0].contents[0].text)        
+        sectionHeading.append(review.contents[0].contents[0].contents[1].contents[4].contents[0].contents[0].contents[0].contents[0].text)
+        sectionHeading.append(review.contents[0].contents[0].contents[1].contents[5].contents[0].contents[0].contents[0].contents[0].text)
 
         # Recieve review text
-        sectionText.append(find.contents[0].contents[0].contents[1].contents[0].contents[1].contents[0].contents[0].contents[0].text)
-        sectionText.append(find.contents[0].contents[0].contents[1].contents[1].contents[1].contents[0].contents[0].contents[0].text)
-        sectionText.append(find.contents[0].contents[0].contents[1].contents[2].contents[1].contents[0].contents[0].contents[0].text)
-        sectionText.append(find.contents[0].contents[0].contents[1].contents[3].contents[1].contents[0].contents[0].contents[0].text)
-        sectionText.append(find.contents[0].contents[0].contents[1].contents[4].contents[1].contents[0].contents[0].contents[0].text)
-        sectionText.append(find.contents[0].contents[0].contents[1].contents[5].contents[1].contents[0].contents[0].contents[0].text)
+        sectionText.append(review.contents[0].contents[0].contents[1].contents[0].contents[1].contents[0].contents[0].contents[0].text)
+        sectionText.append(review.contents[0].contents[0].contents[1].contents[1].contents[1].contents[0].contents[0].contents[0].text)
+        sectionText.append(review.contents[0].contents[0].contents[1].contents[2].contents[1].contents[0].contents[0].contents[0].text)
+        sectionText.append(review.contents[0].contents[0].contents[1].contents[3].contents[1].contents[0].contents[0].contents[0].text)
+        sectionText.append(review.contents[0].contents[0].contents[1].contents[4].contents[1].contents[0].contents[0].contents[0].text)
+        sectionText.append(review.contents[0].contents[0].contents[1].contents[5].contents[1].contents[0].contents[0].contents[0].text)
 
-    # Return a dictionary object of headings and text
-    return(dict(zip(sectionHeading, sectionText)))
+    # Wrap up the review information into a dictionary, this is for easy handling    
+    reviewDict = dict(zip(sectionHeading, sectionText))
+
+    # Create a new review using our Review class, and return that review
+    rev = Review(reviewAuthor, reviewPosition, reviewCompany, reviewRating, reviewDict)
+    return rev
 
 
-# DEBUGGING CODE FOR DEVELOPMENT
 
-dict1 = findMaterials(links[0])
-dict2 = findMaterials(links[1])
-dict3 = findMaterials(links[2])
-dict4 = findMaterials(links[3])
-dict5 = findMaterials(links[4])
-dict6 = findMaterials(links[5])
+reviewGuide = []
+for num in range(len(links)):
+    reviewGuide.append(findMaterials(links[num]))
 
-for x, y in dict5.items():
-    print(x, y)
+
+doc = docx.Document()
+doc.add_heading('Trust Radius Weekly Report', 0)
+
+def createPage(page):
+    doc.add_heading(page.name, 1)
+    doc.add_heading(page.rating + ' out of 10', 1)
+
+    for x, y in page.goodies.items():
+        doc.add_heading(x, 2)
+        doc.add_paragraph(y)
+
+    doc.add_page_break()
+
+for review in reviewGuide:
+    createPage(review)
+
+print('Successfully created a .docx with %d reviews. Check out results.docx...' % len(links))
+doc.save('results.docx')
+
 
