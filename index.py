@@ -5,6 +5,7 @@
 # Lang: Python
 # Dependencies: BeautifulSoup4
 #               Requests
+#               python-docx
 #
 # Description: As part of my current workload, I have to create
 #              weekly reports gathered from reviews on TrustRadius.
@@ -17,6 +18,7 @@
 from bs4 import BeautifulSoup
 import requests
 import docx
+from datetime import date
 
 # Open up TrustRadius page for Sitefinity
 url = "https://www.trustradius.com/products/progress-sitefinity/reviews"
@@ -40,12 +42,13 @@ print "%d links found.\n" % len(links)
 
 # Create custom data structure Review to hold user reviews
 class Review:
-    def __init__(self, name, position, company, rating, goodies):
+    def __init__(self, name, position, company, rating, goodies, day):
         self.name = name
         self.position = position
         self.company = company
         self.rating = rating
         self.goodies = goodies
+        self.day = day
 
 
 # Function for returning review sections from review page
@@ -63,6 +66,7 @@ def findMaterials(link):
     reviewRating = []
     sectionHeading = []
     sectionText = []
+    sectionDate = ''
 
     # Find the authors name (if there is one)
     for review in reviews.find_all('span', {'itemprop': 'author'}):
@@ -79,27 +83,24 @@ def findMaterials(link):
     # Perform find.contents[] for all of the headings and text
     # and append them to our functions variables
     for review in reviews.find_all('div', {'class': 'description'}):
-        # Recieve review section headings
-        sectionHeading.append(review.contents[0].contents[0].contents[1].contents[0].contents[0].contents[0].contents[0].contents[0].text)
-        sectionHeading.append(review.contents[0].contents[0].contents[1].contents[1].contents[0].contents[0].contents[0].contents[0].text)
-        sectionHeading.append(review.contents[0].contents[0].contents[1].contents[2].contents[0].contents[0].contents[0].contents[0].text)
-        sectionHeading.append(review.contents[0].contents[0].contents[1].contents[3].contents[0].contents[0].contents[0].contents[0].text)        
-        sectionHeading.append(review.contents[0].contents[0].contents[1].contents[4].contents[0].contents[0].contents[0].contents[0].text)
-        sectionHeading.append(review.contents[0].contents[0].contents[1].contents[5].contents[0].contents[0].contents[0].contents[0].text)
+        
+        # Receive review section headings
+        for head in range(6):
+            sectionHeading.append(review.contents[0].contents[0].contents[1].contents[head].contents[0].contents[0].contents[0].contents[0].text)
 
-        # Recieve review text
-        sectionText.append(review.contents[0].contents[0].contents[1].contents[0].contents[1].contents[0].contents[0].contents[0].text)
-        sectionText.append(review.contents[0].contents[0].contents[1].contents[1].contents[1].contents[0].contents[0].contents[0].text)
-        sectionText.append(review.contents[0].contents[0].contents[1].contents[2].contents[1].contents[0].contents[0].contents[0].text)
-        sectionText.append(review.contents[0].contents[0].contents[1].contents[3].contents[1].contents[0].contents[0].contents[0].text)
-        sectionText.append(review.contents[0].contents[0].contents[1].contents[4].contents[1].contents[0].contents[0].contents[0].text)
-        sectionText.append(review.contents[0].contents[0].contents[1].contents[5].contents[1].contents[0].contents[0].contents[0].text)
+        # Receive review section bodies
+        for body in range(6):
+            sectionText.append(review.contents[0].contents[0].contents[1].contents[body].contents[1].contents[0].contents[0].contents[0].text)
+
 
     # Wrap up the review information into a dictionary, this is for easy handling    
     reviewDict = dict(zip(sectionHeading, sectionText))
 
+    sectionDate = link[56:-9]
+    days = date(int(sectionDate[:-6]), int(sectionDate[5:-3]), int(sectionDate[8:]))
+
     # Create a new review using our Review class, and return that review
-    rev = Review(reviewAuthor, reviewPosition, reviewCompany, reviewRating, reviewDict)
+    rev = Review(reviewAuthor, reviewPosition, reviewCompany, reviewRating, reviewDict, days)
     return rev
 
 
@@ -114,10 +115,11 @@ doc.add_heading('Trust Radius Weekly Report', 0)
 
 def createPage(page):
     doc.add_heading(page.name, 1)
-    doc.add_heading(page.rating + ' out of 10', 1)
+    doc.add_heading(page.day.strftime('%B %d, %Y'), 3)
+    doc.add_heading(page.rating + ' out of 10 stars', 3)
 
     for x, y in page.goodies.items():
-        doc.add_heading(x, 2)
+        doc.add_heading(x, 4)
         doc.add_paragraph(y)
 
     doc.add_page_break()
@@ -127,5 +129,3 @@ for review in reviewGuide:
 
 print('Successfully created a .docx with %d reviews. Check out results.docx...' % len(links))
 doc.save('results.docx')
-
-
