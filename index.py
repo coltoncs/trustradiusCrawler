@@ -96,6 +96,7 @@ def findMaterials(link):
     # Wrap up the review information into a dictionary, this is for easy handling    
     reviewDict = dict(zip(sectionHeading, sectionText))
 
+    # Get's the date of the review from the review's URL
     sectionDate = link[56:-9]
     days = date(int(sectionDate[:-6]), int(sectionDate[5:-3]), int(sectionDate[8:]))
 
@@ -104,28 +105,35 @@ def findMaterials(link):
     return rev
 
 
-
+# Create array of Review objects and populate with our reviews
 reviewGuide = []
 for num in range(len(links)):
     reviewGuide.append(findMaterials(links[num]))
 
-
+# Create document and insert main heading
 doc = docx.Document()
 doc.add_heading('Trust Radius Weekly Report', 0)
 
+# Func createPage: page (param): an instance of a Review object
 def createPage(page):
+
+    # Insert Review Info
     doc.add_heading(page.name, 1)
     doc.add_heading(page.day.strftime('%B %d, %Y'), 3)
     doc.add_heading(page.rating + ' out of 10 stars', 3)
 
+    # Insert Review Text
     for x, y in page.goodies.items():
         doc.add_heading(x, 4)
         doc.add_paragraph(y)
 
+    # Create new page for next review    
     doc.add_page_break()
 
+# Iterate through all of our reviews to create docx
 for review in reviewGuide:
     createPage(review)
 
-print('Successfully created a .docx with %d reviews. Check out results.docx...' % len(links))
+# Print success and save docx
+print 'Successfully created a .docx with %d reviews. Check out results.docx...' % len(links)
 doc.save('results.docx')
