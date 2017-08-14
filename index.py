@@ -21,8 +21,9 @@ import docx
 from datetime import date
 from operator import itemgetter, attrgetter, methodcaller
 from Review import Review
+import sys
 
-reviewNum = input("How many reviews would you like?\nEnter a number from 0 to 25: ")
+reviewNum = input("How many reviews would you like?\nEnter a number from 0 to 25: \n")
 
 # Open up TrustRadius page for Sitefinity
 url = "https://www.trustradius.com/products/progress-sitefinity/reviews"
@@ -101,6 +102,7 @@ def findMaterials(link):
     # Create a new review using our Review class, and return that review
     rev = Review(reviewAuthor, reviewPosition, reviewCompany, reviewRating, reviewDict, days)
     print "Review created for %s..." % rev.name[0]
+    sys.stdout.flush()
     return rev
 
 
@@ -110,7 +112,7 @@ for num in range(reviewNum):
     reviewGuide.append(findMaterials(links[num]))
 
 # Sort our list based on date posted
-reviewGuideSorted = sorted(reviewGuide, key=attrgetter('day'), reverse=True)
+#reviewGuideSorted = sorted(reviewGuide, key=attrgetter('day'), reverse=True)
 
 # Create document and insert main heading
 doc = docx.Document()
@@ -135,13 +137,13 @@ def createPage(page):
         doc.add_page_break()
 
 # Iterate through all of our reviews to create docx
-for review in reviewGuideSorted:
+for review in reviewGuide:
     createPage(review)
 
 # Print success and save docx (if used for plural/singular case)
 if reviewNum == 1:
-    print 'Successfully created a .docx with %d review. Check out results.docx...' % reviewNum
+    print 'Successfully created a .docx with %d review. Check out TrustRadiusReport.docx...' % reviewNum
 else:
-    print 'Successfully created a .docx with %d reviews. Check out results.docx...' % reviewNum
+    print 'Successfully created a .docx with %d reviews. Check out TrustRadiusReport.docx...' % reviewNum
     
-doc.save('results.docx')
+doc.save('TrustRadiusReport.docx')
