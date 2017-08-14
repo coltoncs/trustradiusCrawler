@@ -19,6 +19,8 @@ from bs4 import BeautifulSoup
 import requests
 import docx
 from datetime import date
+from operator import itemgetter, attrgetter, methodcaller
+from Review import Review
 
 # Open up TrustRadius page for Sitefinity
 url = "https://www.trustradius.com/products/progress-sitefinity/reviews"
@@ -38,18 +40,7 @@ for link in query:
     links.append('https://www.trustradius.com' + link.get('href'))
 
 # Print number of reviews to command line
-print "%d links found.\n" % len(links)
-
-# Create custom data structure Review to hold user reviews
-class Review:
-    def __init__(self, name, position, company, rating, goodies, day):
-        self.name = name
-        self.position = position
-        self.company = company
-        self.rating = rating
-        self.goodies = goodies
-        self.day = day
-
+print "%d links found." % len(links)
 
 # Function for returning review sections from review page
 # return (dictionary): a key-value list of the headings and review text
@@ -67,6 +58,7 @@ def findMaterials(link):
     sectionHeading = []
     sectionText = []
     sectionDate = ''
+
 
     # Find the authors name (if there is one)
     for review in reviews.find_all('span', {'itemprop': 'author'}):
@@ -102,6 +94,7 @@ def findMaterials(link):
 
     # Create a new review using our Review class, and return that review
     rev = Review(reviewAuthor, reviewPosition, reviewCompany, reviewRating, reviewDict, days)
+    print "Review created for %s..." % rev.name[0]
     return rev
 
 
@@ -109,6 +102,9 @@ def findMaterials(link):
 reviewGuide = []
 for num in range(len(links)):
     reviewGuide.append(findMaterials(links[num]))
+
+# Sort our list based on date posted
+reviewGuideSorted = sorted(reviewGuide, key=attrgetter('day'), reverse=True)
 
 # Create document and insert main heading
 doc = docx.Document()
@@ -119,6 +115,7 @@ def createPage(page):
 
     # Insert Review Info
     doc.add_heading(page.name, 1)
+    doc.add_heading("%s at %s" % (page.position[0], page.company[0]), 3)
     doc.add_heading(page.day.strftime('%B %d, %Y'), 3)
     doc.add_heading(page.rating + ' out of 10 stars', 3)
 
@@ -131,7 +128,7 @@ def createPage(page):
     doc.add_page_break()
 
 # Iterate through all of our reviews to create docx
-for review in reviewGuide:
+for review in reviewGuideSorted:
     createPage(review)
 
 # Print success and save docx
